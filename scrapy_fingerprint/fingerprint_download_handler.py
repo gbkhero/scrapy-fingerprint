@@ -22,13 +22,15 @@ def as_deferred(f):
 
 class FingerprintDownloadHandler:
 
-    def __init__(self, user, password, server, proxy_port):
+    def __init__(self, user, password, server, proxy_port, proxy_scheme):
         self.user = user
         self.password = password
         self.server = server
         self.proxy_port = proxy_port
+        self.proxy_scheme = proxy_scheme or 'http'
         if self.user:
-            proxy_meta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
+            proxy_meta = "%(scheme)s://%(user)s:%(pass)s@%(host)s:%(port)s" % {
+                "scheme": self.proxy_scheme,
                 "host": self.server,
                 "port": self.proxy_port,
                 "user": self.user,
@@ -47,10 +49,12 @@ class FingerprintDownloadHandler:
         password = crawler.settings.get("PROXY_PASS")
         server = crawler.settings.get("PROXY_HOST")
         proxy_port = crawler.settings.get("PROXY_PORT")
+        proxy_scheme = crawler.settings.get('PROXY_SCHEME')
         s = cls(user=user,
                 password=password,
                 server=server,
-                proxy_port=proxy_port)
+                proxy_port=proxy_port,
+                proxy_scheme=proxy_scheme)
         return s
 
     async def _download_request(self, request):
@@ -61,7 +65,7 @@ class FingerprintDownloadHandler:
             ])
 
             timeout = request.meta.get("download_timeout") or 30
-
+            
             try:
                 response = await s.request(
                     request.method,
